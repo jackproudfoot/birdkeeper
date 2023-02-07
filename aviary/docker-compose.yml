@@ -2,10 +2,10 @@ version: '3.8'
 
 services:
   web:
-    build: ./apiary
+    build: ./server
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - ./apiary/:/usr/src/app/
+      - ./server/:/usr/src/app/
     ports:
       - 8000:8000
     env_file:
