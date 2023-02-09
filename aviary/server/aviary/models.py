@@ -1,16 +1,11 @@
 from django.db import models
-
-class Users(models.Model):
-    name = models.CharField(max_length=20)
-
-    def __str__(self):
-        return self.name
+from django.contrib.auth.models import User
 
 class Flight(models.Model):
     drone = models.CharField(max_length=60)
     start = models.DateTimeField()
     end   = models.DateTimeField()
-    pilot = models.ForeignKey(Users, on_delete=models.DO_NOTHING)
+    pilot = models.ForeignKey(User, on_delete=models.DO_NOTHING)
 
 class Media(models.Model):
     file     = models.URLField()

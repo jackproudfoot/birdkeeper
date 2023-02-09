@@ -1,26 +1,27 @@
 from django.contrib import admin
 from .models import Flight, Media, FlightMedia, Observation, ObservationMedia, Identification, IdentificationObservation
+from import_export.admin import ExportActionMixin
 
 # Register your models here.
-class FlightAdmin(admin.ModelAdmin):
+class FlightAdmin(ExportActionMixin, admin.ModelAdmin):
     list_display = ('drone', 'start', 'end', 'pilot')
 
-class MediaAdmin(admin.ModelAdmin):
+class MediaAdmin(ExportActionMixin, admin.ModelAdmin):
     list_display = ('file', 'type', 'geo_data')
 
-class FlightMediaAdmin(admin.ModelAdmin):
+class FlightMediaAdmin(ExportActionMixin, admin.ModelAdmin):
     list_display = ('flight_id', 'media_id')
 
-class ObservationAdmin(admin.ModelAdmin):
+class ObservationAdmin(ExportActionMixin, admin.ModelAdmin):
     list_display = ('description', 'type')
 
-class ObservationMediaAdmin(admin.ModelAdmin):
+class ObservationMediaAdmin(ExportActionMixin, admin.ModelAdmin):
     list_display = ('observation_id', 'media_id')
 
-class IdentificationAdmin(admin.ModelAdmin):
+class IdentificationAdmin(ExportActionMixin, admin.ModelAdmin):
     list_display = ('source', 'species')
 
-class IdentificationObservationAdmin(admin.ModelAdmin):
+class IdentificationObservationAdmin(ExportActionMixin, admin.ModelAdmin):
     list_display = ('observation_id', 'identification_id')
 
 admin.site.register(Flight, FlightAdmin)
