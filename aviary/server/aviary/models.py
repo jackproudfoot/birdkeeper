@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 
 class Flight(models.Model):
     drone = models.CharField(max_length=60)
@@ -7,27 +8,85 @@ class Flight(models.Model):
     end   = models.DateTimeField()
     pilot = models.ForeignKey(User, on_delete=models.DO_NOTHING)
 
+
+    # returns a valid geojson FeatureCollection for the flight composed of features from FlightMedia
+    def feature_collection(self):
+        flight_medias = []
+
+        try:
+            flight_medias = FlightMedia.objects.filter(flight=self.id).prefetch_related("media")
+        except ObjectDoesNotExist:
+            raise Exception('error no media associated with flight')
+        except Exception as e:
+            raise Exception(f'error when exporting flight: {e}')
+    
+        features = [flight_media.media.feature() for flight_media in flight_medias]
+
+        return {
+            'type': 'FeatureCollection',
+            'features': features
+        }
+
+
+    def __str__(self):
+        return f'{self.id}\t{self.drone}\t{self.start}'
+
+    class Meta:
+        default_related_name = 'flights'
+
 class Media(models.Model):
-    file     = models.URLField()
+    file     = models.CharField(max_length=200)
     type     = models.CharField(max_length=20)
-    geo_data = models.JSONField()
+    geometry = models.JSONField()
+
+    # returns a valid geojson Feature from the media 
+    def feature(self):
+        return {
+            'type': 'Feature',
+            'geometry': self.geometry,
+            'properties': {
+                'file': str(self.file),
+                'type': str(self.type)
+            }
+        }
+
+    def __str__(self):
+        return f'{self.file}'
+
+    class Meta:
+        default_related_name = 'medias'
 
 class FlightMedia(models.Model):
-    flight_id = models.ForeignKey(Flight, on_delete=models.CASCADE)
-    media_id  = models.ForeignKey(Media, on_delete=models.CASCADE)
+    flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
+    media  = models.ForeignKey(Media, on_delete=models.CASCADE)
+
+    class Meta:
+        default_related_name = 'flight_medias'
 
 class Observation(models.Model):
     description = models.TextField()
     type        = models.CharField(max_length=80)
 
+    class Meta:
+        default_related_name = 'observations'
+
 class ObservationMedia(models.Model):
-    observation_id = models.ForeignKey(Observation, on_delete=models.CASCADE)
-    media_id       = models.ForeignKey(Media, on_delete=models.CASCADE)
+    observation = models.ForeignKey(Observation, on_delete=models.CASCADE)
+    media       = models.ForeignKey(Media, on_delete=models.CASCADE)
+
+    class Meta:
+        default_related_name = 'observation_medias'
 
 class Identification(models.Model):
     source  = models.TextField()
     species = models.TextField()
+    
+    class Meta:
+        default_related_name = 'identifications'
 
 class IdentificationObservation(models.Model):
-    observation_id    = models.ForeignKey(Observation, on_delete=models.CASCADE)
-    identification_id = models.ForeignKey(Identification, on_delete=models.CASCADE)
+    observation    = models.ForeignKey(Observation, on_delete=models.CASCADE)
+    identification = models.ForeignKey(Identification, on_delete=models.CASCADE)
+
+    class Meta:
+        default_related_name = 'identification_observations'
