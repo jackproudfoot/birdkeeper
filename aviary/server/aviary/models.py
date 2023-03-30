@@ -10,7 +10,7 @@ class Flight(models.Model):
 
 
     # returns a valid geojson FeatureCollection for the flight composed of features from FlightMedia
-    def feature_collection(self):
+    def media_feature_collection(self):
         flight_medias = []
 
         try:
@@ -25,6 +25,32 @@ class Flight(models.Model):
         return {
             'type': 'FeatureCollection',
             'features': features
+        }
+    
+    def feature(self):
+        flight_medias = []
+
+        try:
+            flight_medias = FlightMedia.objects.filter(flight=self.id).prefetch_related("media")
+        except ObjectDoesNotExist:
+            raise Exception('error no media associated with flight')
+        except Exception as e:
+            raise Exception(f'error when exporting flight: {e}')
+    
+        flight_lines = [flight_media.media.geometry['coordinates'] for flight_media in flight_medias if flight_media.media.type == 'mp4']
+
+        return {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'MultiLineString',
+                'coordinates': flight_lines
+            },
+            'properties': {
+                'drone': str(self.drone),
+                'start': str(self.start),
+                'end': str(self.end),
+                'pilot': str(self.pilot)
+            }
         }
 
 

@@ -15,9 +15,14 @@ def flight(request, id):
         flight = Flight.objects.get(pk=id)
     except ObjectDoesNotExist:
         return HttpResponse(f'error flight {id} does not exist')
-    except:
+    except Exception as e:
        return HttpResponse(f'error when exporting flight: {e}')
 
-    geojson = flight.feature_collection()
+    feature = flight.feature()
 
-    return HttpResponse(json.dumps(geojson))
+    print(feature)
+
+    return HttpResponse(json.dumps({
+            'type': 'FeatureCollection',
+            'features': [feature]
+    }))
