@@ -1,5 +1,7 @@
 # Aviary
 
+Note you will probably want to modify the [docker-compose](./docker-compose.yml) file to ensure the Volume is located on the removable SSD. That way the database will be portable along with the media files.
+
 ## Commands
 
 To start
