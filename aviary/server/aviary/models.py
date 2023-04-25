@@ -1,9 +1,22 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+import json
+
+class Drone(models.Model):
+    name = models.CharField(max_length=60, unique=True)
+    drone_id = models.CharField(max_length=60, unique=True)
+    make = models.CharField(max_length=60)
+    model = models.CharField(max_length=60)
+
+
+    def __str__(self):
+        return f'{self.name}'
+
 
 class Flight(models.Model):
-    drone = models.CharField(max_length=60)
+    drone = models.ForeignKey(Drone, on_delete=models.DO_NOTHING)
+    run_id = models.CharField(max_length=60)
     start = models.DateTimeField()
     end   = models.DateTimeField()
     pilot = models.ForeignKey(User, on_delete=models.DO_NOTHING)
@@ -64,6 +77,7 @@ class Media(models.Model):
     file     = models.CharField(max_length=200)
     type     = models.CharField(max_length=20)
     geometry = models.JSONField()
+    recorded = models.DateTimeField()
 
     # returns a valid geojson Feature from the media 
     def feature(self):
@@ -92,6 +106,29 @@ class FlightMedia(models.Model):
 class Observation(models.Model):
     description = models.TextField()
     type        = models.CharField(max_length=80)
+
+    # returns a list of valid geojson Features from the observation medias
+    def features(self):
+        
+        observation_medias = []
+
+        try:
+            observation_medias = ObservationMedia.objects.filter(observation=self.id).prefetch_related("media")
+        except ObjectDoesNotExist:
+            raise Exception('error no media associated with observation')
+        except Exception as e:
+            raise Exception(f'error when exporting observation: {e}')
+        
+        media_features = [obs_media.media.feature() for obs_media in observation_medias]
+
+        for media_feature in media_features:
+            media_feature['properties']['observation'] = self.description 
+            media_feature['properties']['observation_type'] = self.type 
+
+        return media_features
+
+    def __str__(self):
+        return f'{self.description} ({self.id})'
 
     class Meta:
         default_related_name = 'observations'
